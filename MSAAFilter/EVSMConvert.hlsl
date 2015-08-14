@@ -39,7 +39,7 @@
     Texture2DArray EVSMMap : register(t0);
 #endif
 
-cbuffer EVSMConstants : register(cb0)
+cbuffer EVSMConstants : register(b0)
 {
     float3 CascadeScale;
     float PositiveExponent;

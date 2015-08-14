@@ -13,7 +13,7 @@
 // Constant buffers
 //=================================================================================================
 
-cbuffer VSConstants : register (cb0)
+cbuffer VSConstants : register (b0)
 {
     float4x4 View;
     float4x4 Projection;
@@ -21,7 +21,7 @@ cbuffer VSConstants : register (cb0)
 }
 
 
-cbuffer PSConstants : register (cb0)
+cbuffer PSConstants : register (b0)
 {
     float3 SunDirection;
     bool EnableSun;
