@@ -19,7 +19,7 @@
 //=================================================================================================
 // Resources
 //=================================================================================================
-cbuffer BackgroundVelocityConstants : register(cb0)
+cbuffer BackgroundVelocityConstants : register(b0)
 {
     float4x4 InvViewProjection;
     float4x4 PrevViewProjection;

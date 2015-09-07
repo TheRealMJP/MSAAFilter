@@ -71,7 +71,7 @@ Texture2D<float2> VelocityTexture : register(t2);
 
 SamplerState LinearSampler : register(s0);
 
-cbuffer ResolveConstants : register(cb0)
+cbuffer ResolveConstants : register(b0)
 {
     int SampleRadius;
     float2 TextureSize;
