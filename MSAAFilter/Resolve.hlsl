@@ -29,31 +29,31 @@
 #define MSAA_ (MSAASamples_ > 1)
 
 #if MSAASamples_ == 8
-    static const float2 SampleOffsets[8] = {
-        float2(0.580f, 0.298f),
-        float2(0.419f, 0.698f),
-        float2(0.819f, 0.580f),
-        float2(0.298f, 0.180f),
-        float2(0.180f, 0.819f),
-        float2(0.058f, 0.419f),
-        float2(0.698f, 0.941f),
-        float2(0.941f, 0.058f),
+    static const float2 SubSampleOffsets[8] = {
+        float2( 0.0625f, -0.1875f),
+        float2(-0.0625f,  0.1875f),
+        float2( 0.3125f,  0.0625f),
+        float2(-0.1875f, -0.3125f),
+        float2(-0.3125f,  0.3125f),
+        float2(-0.4375f, -0.0625f),
+        float2( 0.1875f,  0.4375f),
+        float2( 0.4375f, -0.4375f),
     };
 #elif MSAASamples_ == 4
-    static const float2 SampleOffsets[4] = {
-        float2(0.380f, 0.141f),
-        float2(0.859f, 0.380f),
-        float2(0.141f, 0.620f),
-        float2(0.619f, 0.859f),
+    static const float2 SubSampleOffsets[4] = {
+        float2(-0.125f, -0.375f),
+        float2( 0.375f, -0.125f),
+        float2(-0.375f,  0.125f),
+        float2( 0.125f,  0.375f),
     };
 #elif MSAASamples_ == 2
-    static const float2 SampleOffsets[2] = {
-        float2(0.741f, 0.741f),
-        float2(0.258f, 0.258f),
+    static const float2 SubSampleOffsets[2] = {
+        float2( 0.25f,  0.25f),
+        float2(-0.25f, -0.25f),
     };
 #else
-    static const float2 SampleOffsets[1] = {
-        float2(0.5f, 0.5f),
+    static const float2 SubSampleOffsets[1] = {
+        float2(0.0f, 0.0f),
     };
 #endif
 
@@ -214,9 +214,8 @@ float4 ResolvePS(in float4 Position : SV_Position) : SV_Target0
             [unroll]
             for(uint subSampleIdx = 0; subSampleIdx < MSAASamples_; ++subSampleIdx)
             {
-                sampleOffset += SampleOffsets[subSampleIdx].xy - 0.5f;
-
-                float sampleDist = length(sampleOffset) / (FilterSize / 2.0f);
+                float2 subSampleOffset = SubSampleOffsets[subSampleIdx].xy;
+                float sampleDist = length(sampleOffset + subSampleOffset) / (FilterSize / 2.0f);
 
                 [branch]
                 if(sampleDist <= 1.0f)
