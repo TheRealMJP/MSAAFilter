@@ -28,6 +28,8 @@
 
 #define MSAA_ (MSAASamples_ > 1)
 
+// These are the sub-sample locations for the 2x, 4x, and 8x standard multisample patterns.
+// See the MSDN documentation for the D3D11_STANDARD_MULTISAMPLE_QUALITY_LEVELS enumeration.
 #if MSAASamples_ == 8
     static const float2 SubSampleOffsets[8] = {
         float2( 0.0625f, -0.1875f),
