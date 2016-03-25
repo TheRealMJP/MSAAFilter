@@ -375,6 +375,7 @@ PSOutput PS(in PSInput input)
     prevPositionSS *= RTSize;
     output.Velocity = input.PositionSS.xy - prevPositionSS;
     output.Velocity -= JitterOffset;
+    output.Velocity /= RTSize;
 
     return output;
 }

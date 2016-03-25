@@ -36,6 +36,18 @@ enum class FilterTypes
 
 typedef EnumSettingT<FilterTypes> FilterTypesSetting;
 
+enum class ClampModes
+{
+    Disabled = 0,
+    RGB_Clamp = 1,
+    RGB_Clip = 2,
+    Variance_Clip = 3,
+
+    NumValues
+};
+
+typedef EnumSettingT<ClampModes> ClampModesSetting;
+
 enum class JitterModes
 {
     None = 0,
@@ -46,6 +58,17 @@ enum class JitterModes
 };
 
 typedef EnumSettingT<JitterModes> JitterModesSetting;
+
+enum class DilationModes
+{
+    CenterAverage = 0,
+    DilateNearestDepth = 1,
+    DilateGreatestVelocity = 2,
+
+    NumValues
+};
+
+typedef EnumSettingT<DilationModes> DilationModesSetting;
 
 enum class Scenes
 {
@@ -78,11 +101,14 @@ namespace AppSettings
     extern BoolSetting EnableTemporalAA;
     extern FloatSetting TemporalAABlendFactor;
     extern BoolSetting UseTemporalColorWeighting;
-    extern BoolSetting ClampPrevColor;
+    extern ClampModesSetting NeighborhoodClampMode;
+    extern FloatSetting VarianceClipGamma;
     extern JitterModesSetting JitterMode;
+    extern FloatSetting JitterScale;
     extern FloatSetting LowFreqWeight;
     extern FloatSetting HiFreqWeight;
     extern FloatSetting SharpeningAmount;
+    extern DilationModesSetting DilationMode;
     extern ScenesSetting CurrentScene;
     extern DirectionSetting LightDirection;
     extern ColorSetting LightColor;
@@ -120,13 +146,15 @@ namespace AppSettings
         bool32 EnableTemporalAA;
         float TemporalAABlendFactor;
         bool32 UseTemporalColorWeighting;
-        bool32 ClampPrevColor;
+        int32 NeighborhoodClampMode;
+        float VarianceClipGamma;
         float LowFreqWeight;
         float HiFreqWeight;
         float SharpeningAmount;
+        int32 DilationMode;
         int32 CurrentScene;
-        Float4Align Float3 LightDirection;
-        Float4Align Float3 LightColor;
+        Float3 LightDirection;
+        Float3 LightColor;
         bool32 EnableDirectLighting;
         bool32 EnableAmbientLighting;
         bool32 RenderBackground;

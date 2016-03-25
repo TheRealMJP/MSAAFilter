@@ -44,7 +44,6 @@ protected:
     RenderTarget2D resolveTarget;
     RenderTarget2D prevFrameTarget;
     RenderTarget2D velocityTarget;
-    RenderTarget2D velocityResolveTarget;
     uint64 frameCount = 0;
 
     // Model

@@ -52,7 +52,5 @@ float2 BackgroundVelocityPS(in float4 PositionSS : SV_Position) : SV_Target0
     float2 prevPositionSS = (prevPositionNCD.xy * float2(0.5f, -0.5f) + 0.5f) * RTSize;
     float2 velocity = PositionSS.xy - prevPositionSS;
     velocity -= JitterOffset;
-    return velocity;
-
-    return 0.0f;
+    return velocity / RTSize;
 }

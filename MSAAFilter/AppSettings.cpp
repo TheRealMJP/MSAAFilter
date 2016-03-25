@@ -26,11 +26,26 @@ static const char* FilterTypesLabels[10] =
     "Sinc",
 };
 
+static const char* ClampModesLabels[4] =
+{
+    "Disabled",
+    "RGB_Clamp",
+    "RGB_Clip",
+    "Variance_Clip",
+};
+
 static const char* JitterModesLabels[3] =
 {
     "None",
     "Uniform2x",
     "Hammersly16",
+};
+
+static const char* DilationModesLabels[3] =
+{
+    "Center Average",
+    "Dilate - Nearest Depth",
+    "Dilate - Greatest Velocity",
 };
 
 static const char* ScenesLabels[2] =
@@ -56,11 +71,14 @@ namespace AppSettings
     BoolSetting EnableTemporalAA;
     FloatSetting TemporalAABlendFactor;
     BoolSetting UseTemporalColorWeighting;
-    BoolSetting ClampPrevColor;
+    ClampModesSetting NeighborhoodClampMode;
+    FloatSetting VarianceClipGamma;
     JitterModesSetting JitterMode;
+    FloatSetting JitterScale;
     FloatSetting LowFreqWeight;
     FloatSetting HiFreqWeight;
     FloatSetting SharpeningAmount;
+    DilationModesSetting DilationMode;
     ScenesSetting CurrentScene;
     DirectionSetting LightDirection;
     ColorSetting LightColor;
@@ -91,7 +109,7 @@ namespace AppSettings
         MSAAMode.Initialize(tweakBar, "MSAAMode", "Anti Aliasing", "MSAAMode", "", MSAAModes::MSAA4x, 4, MSAAModesLabels);
         Settings.AddSetting(&MSAAMode);
 
-        FilterType.Initialize(tweakBar, "FilterType", "Anti Aliasing", "Filter Type", "", FilterTypes::Smoothstep, 10, FilterTypesLabels);
+        FilterType.Initialize(tweakBar, "FilterType", "Anti Aliasing", "Filter Type", "", FilterTypes::BSpline, 10, FilterTypesLabels);
         Settings.AddSetting(&FilterType);
 
         FilterSize.Initialize(tweakBar, "FilterSize", "Anti Aliasing", "Filter Size", "", 2.0000f, 0.0000f, 6.0000f, 0.0100f, ConversionMode::None, 1.0000f);
@@ -127,17 +145,23 @@ namespace AppSettings
         EnableTemporalAA.Initialize(tweakBar, "EnableTemporalAA", "Anti Aliasing", "Enable Temporal AA", "", true);
         Settings.AddSetting(&EnableTemporalAA);
 
-        TemporalAABlendFactor.Initialize(tweakBar, "TemporalAABlendFactor", "Anti Aliasing", "Temporal AABlend Factor", "", 0.5000f, 0.0000f, 1.0000f, 0.0100f, ConversionMode::None, 1.0000f);
+        TemporalAABlendFactor.Initialize(tweakBar, "TemporalAABlendFactor", "Anti Aliasing", "Temporal AABlend Factor", "", 0.9000f, 0.0000f, 1.0000f, 0.0100f, ConversionMode::None, 1.0000f);
         Settings.AddSetting(&TemporalAABlendFactor);
 
-        UseTemporalColorWeighting.Initialize(tweakBar, "UseTemporalColorWeighting", "Anti Aliasing", "Use Temporal Color Weighting", "", true);
+        UseTemporalColorWeighting.Initialize(tweakBar, "UseTemporalColorWeighting", "Anti Aliasing", "Use Temporal Color Weighting", "", false);
         Settings.AddSetting(&UseTemporalColorWeighting);
 
-        ClampPrevColor.Initialize(tweakBar, "ClampPrevColor", "Anti Aliasing", "Clamp Prev Color", "", true);
-        Settings.AddSetting(&ClampPrevColor);
+        NeighborhoodClampMode.Initialize(tweakBar, "NeighborhoodClampMode", "Anti Aliasing", "Neighborhood Clamp Mode", "", ClampModes::Variance_Clip, 4, ClampModesLabels);
+        Settings.AddSetting(&NeighborhoodClampMode);
+
+        VarianceClipGamma.Initialize(tweakBar, "VarianceClipGamma", "Anti Aliasing", "Variance Clip Gamma", "", 1.0000f, 0.0000f, 2.0000f, 0.0100f, ConversionMode::None, 1.0000f);
+        Settings.AddSetting(&VarianceClipGamma);
 
         JitterMode.Initialize(tweakBar, "JitterMode", "Anti Aliasing", "Jitter Mode", "", JitterModes::Uniform2x, 3, JitterModesLabels);
         Settings.AddSetting(&JitterMode);
+
+        JitterScale.Initialize(tweakBar, "JitterScale", "Anti Aliasing", "Jitter Scale", "", 1.0000f, 0.0000f, 340282300000000000000000000000000000000.0000f, 0.0100f, ConversionMode::None, 1.0000f);
+        Settings.AddSetting(&JitterScale);
 
         LowFreqWeight.Initialize(tweakBar, "LowFreqWeight", "Anti Aliasing", "Low Freq Weight", "", 0.2500f, 0.0000f, 100.0000f, 0.0100f, ConversionMode::None, 1.0000f);
         Settings.AddSetting(&LowFreqWeight);
@@ -147,6 +171,9 @@ namespace AppSettings
 
         SharpeningAmount.Initialize(tweakBar, "SharpeningAmount", "Anti Aliasing", "Sharpening Amount", "", 0.0000f, 0.0000f, 1.0000f, 0.0100f, ConversionMode::None, 1.0000f);
         Settings.AddSetting(&SharpeningAmount);
+
+        DilationMode.Initialize(tweakBar, "DilationMode", "Anti Aliasing", "Dilation Mode", "", DilationModes::DilateNearestDepth, 3, DilationModesLabels);
+        Settings.AddSetting(&DilationMode);
 
         CurrentScene.Initialize(tweakBar, "CurrentScene", "Scene Controls", "Current Scene", "", Scenes::RoboHand, 2, ScenesLabels);
         Settings.AddSetting(&CurrentScene);
@@ -237,10 +264,12 @@ namespace AppSettings
         CBuffer.Data.EnableTemporalAA = EnableTemporalAA;
         CBuffer.Data.TemporalAABlendFactor = TemporalAABlendFactor;
         CBuffer.Data.UseTemporalColorWeighting = UseTemporalColorWeighting;
-        CBuffer.Data.ClampPrevColor = ClampPrevColor;
+        CBuffer.Data.NeighborhoodClampMode = NeighborhoodClampMode;
+        CBuffer.Data.VarianceClipGamma = VarianceClipGamma;
         CBuffer.Data.LowFreqWeight = LowFreqWeight;
         CBuffer.Data.HiFreqWeight = HiFreqWeight;
         CBuffer.Data.SharpeningAmount = SharpeningAmount;
+        CBuffer.Data.DilationMode = DilationMode;
         CBuffer.Data.CurrentScene = CurrentScene;
         CBuffer.Data.LightDirection = LightDirection;
         CBuffer.Data.LightColor = LightColor;
@@ -283,9 +312,10 @@ namespace AppSettings
         bool enableTemporal = EnableTemporalAA.Value() ? true : false;
         JitterMode.SetEditable(enableTemporal);
         UseTemporalColorWeighting.SetEditable(enableTemporal);
-        ClampPrevColor.SetEditable(enableTemporal);
+        NeighborhoodClampMode.SetEditable(enableTemporal);
         LowFreqWeight.SetEditable(enableTemporal);
         HiFreqWeight.SetEditable(enableTemporal);
+        DilationMode.SetEditable(enableTemporal);
 
         bool generalCubic = FilterType == FilterTypes::GeneralizedCubic;
         CubicB.SetEditable(generalCubic);

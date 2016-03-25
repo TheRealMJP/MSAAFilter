@@ -64,12 +64,15 @@
 //=================================================================================================
 #if MSAA_
     Texture2DMS<float4> InputTexture : register(t0);
+    Texture2DMS<float2> VelocityTexture : register(t1);
+    Texture2DMS<float> DepthTexture : register(t2);
 #else
     Texture2D<float4> InputTexture : register(t0);
+    Texture2D<float2> VelocityTexture : register(t1);
+    Texture2D<float> DepthTexture : register(t2);
 #endif
 
-Texture2D<float4> PrevFrameTexture : register(t1);
-Texture2D<float2> VelocityTexture : register(t2);
+Texture2D<float4> PrevFrameTexture : register(t3);
 
 SamplerState LinearSampler : register(s0);
 
@@ -79,14 +82,11 @@ cbuffer ResolveConstants : register(b0)
     float2 TextureSize;
 }
 
-float3 SampleTexture(in float2 samplePos, in uint subSampleIdx)
-{
-    #if MSAA_
-        return InputTexture.Load(uint2(samplePos), subSampleIdx).xyz;
-    #else
-        return InputTexture[uint2(samplePos)].xyz;
-    #endif
-}
+#if MSAA_
+    #define MSAALoad_(tex, addr, subSampleIdx) tex.Load(uint2(addr), subSampleIdx)
+#else
+    #define MSAALoad_(tex, addr, subSampleIdx) tex[uint2(addr)]
+#endif
 
 float FilterBox(in float x)
 {
@@ -196,6 +196,49 @@ float Luminance(in float3 clr)
     return dot(clr, float3(0.299f, 0.587f, 0.114f));
 }
 
+// From "Temporal Reprojection Anti-Aliasing"
+// https://github.com/playdeadgames/temporal
+float3 ClipAABB(float3 aabbMin, float3 aabbMax, float3 prevSample, float3 avg)
+{
+    #if 1
+        // note: only clips towards aabb center (but fast!)
+        float3 p_clip = 0.5 * (aabbMax + aabbMin);
+        float3 e_clip = 0.5 * (aabbMax - aabbMin);
+
+        float3 v_clip = prevSample - p_clip;
+        float3 v_unit = v_clip.xyz / e_clip;
+        float3 a_unit = abs(v_unit);
+        float ma_unit = max(a_unit.x, max(a_unit.y, a_unit.z));
+
+        if (ma_unit > 1.0)
+            return p_clip + v_clip / ma_unit;
+        else
+            return prevSample;// point inside aabb
+    #else
+        float3 r = prevSample - avg;
+        float3 rmax = aabbMax - avg.xyz;
+        float3 rmin = aabbMin - avg.xyz;
+
+        const float eps = 0.000001f;
+
+        if (r.x > rmax.x + eps)
+            r *= (rmax.x / r.x);
+        if (r.y > rmax.y + eps)
+            r *= (rmax.y / r.y);
+        if (r.z > rmax.z + eps)
+            r *= (rmax.z / r.z);
+
+        if (r.x < rmin.x - eps)
+            r *= (rmin.x / r.x);
+        if (r.y < rmin.y - eps)
+            r *= (rmin.y / r.y);
+        if (r.z < rmin.z - eps)
+            r *= (rmin.z / r.z);
+
+        return avg + r;
+    #endif
+}
+
 float4 ResolvePS(in float4 Position : SV_Position) : SV_Target0
 {
     float2 pixelPos = Position.xy;
@@ -205,9 +248,19 @@ float4 ResolvePS(in float4 Position : SV_Position) : SV_Target0
     float3 clrMin = 99999999.0f;
     float3 clrMax = -99999999.0f;
 
-    for(int y = -SampleRadius; y <= SampleRadius; ++y)
+    float3 m1 = 0.0f;
+    float3 m2 = 0.0f;
+    float mWeight = 0.0f;
+
+    #if MSAA_
+        const int SampleRadius_ = SampleRadius;
+    #else
+        const int SampleRadius_ = 1;
+    #endif
+
+    for(int y = -SampleRadius_; y <= SampleRadius_; ++y)
     {
-        for(int x = -SampleRadius; x <= SampleRadius; ++x)
+        for(int x = -SampleRadius_; x <= SampleRadius_; ++x)
         {
             float2 sampleOffset = float2(x, y);
             float2 samplePos = pixelPos + sampleOffset;
@@ -217,15 +270,21 @@ float4 ResolvePS(in float4 Position : SV_Position) : SV_Target0
             for(uint subSampleIdx = 0; subSampleIdx < MSAASamples_; ++subSampleIdx)
             {
                 float2 subSampleOffset = SubSampleOffsets[subSampleIdx].xy;
-                float sampleDist = length(sampleOffset + subSampleOffset) / (FilterSize / 2.0f);
+                float2 sampleDist = abs(sampleOffset + subSampleOffset) / (FilterSize / 2.0f);
+                // float2 sampleDist = length(sampleOffset + subSampleOffset) / (FilterSize / 2.0f);
 
-                [branch]
-                if(sampleDist <= 1.0f)
+                #if MSAA_
+                    bool useSample = all(sampleDist <= 1.0f);
+                #else
+                    bool useSample = true;
+                #endif
+
+                if(useSample)
                 {
-                    float3 sample = SampleTexture(samplePos, subSampleIdx);
+                    float3 sample = MSAALoad_(InputTexture, samplePos, subSampleIdx).xyz;
                     sample = max(sample, 0.0f);
 
-                    float weight = Filter(sampleDist);
+                    float weight = Filter(sampleDist.x) * Filter(sampleDist.y);
                     clrMin = min(clrMin, sample);
                     clrMax = max(clrMax, sample);
 
@@ -239,26 +298,103 @@ float4 ResolvePS(in float4 Position : SV_Position) : SV_Target0
 
                     sum += sample * weight;
                     totalWeight += weight;
+
+                    m1 += sample;
+                    m2 += sample * sample;
+                    mWeight += 1.0f;
                 }
             }
         }
     }
 
-    float3 output = sum / max(totalWeight, 0.00001f);
+    #if MSAA_
+        float3 output = sum / max(totalWeight, 0.00001f);
+    #else
+        float3 output = InputTexture[uint2(pixelPos)].xyz;
+    #endif
+
     output = max(output, 0.0f);
 
     if(EnableTemporalAA)
     {
         float3 currColor = output;
 
-        float2 velocity = VelocityTexture[pixelPos];
+        float2 velocity = 0.0f;
+        if(DilationMode == DilationModes_CenterAverage)
+        {
+            [unroll]
+            for(uint vsIdx = 0; vsIdx < MSAASamples_; ++vsIdx)
+                velocity += MSAALoad_(VelocityTexture, pixelPos, vsIdx);
+            velocity /= MSAASamples_;
+        }
+        else if(DilationMode == DilationModes_DilateNearestDepth)
+        {
+            float closestDepth = 10.0f;
+            for(int vy = -1; vy <= 1; ++vy)
+            {
+                for(int vx = -1; vx <= 1; ++vx)
+                {
+                    [unroll]
+                    for(uint vsIdx = 0; vsIdx < MSAASamples_; ++vsIdx)
+                    {
+                        float2 neighborVelocity = MSAALoad_(VelocityTexture, pixelPos + int2(vx, vy), vsIdx);
+                        float neighborDepth = MSAALoad_(DepthTexture, pixelPos + int2(vx, vy), vsIdx);
+                        if(neighborDepth < closestDepth)
+                        {
+                            velocity = neighborVelocity;
+                            closestDepth = neighborDepth;
+                        }
+                    }
+                }
+            }
+        }
+        else if(DilationMode == DilationModes_DilateGreatestVelocity)
+        {
+            float greatestVelocity = -1.0f;
+            for(int vy = -1; vy <= 1; ++vy)
+            {
+                for(int vx = -1; vx <= 1; ++vx)
+                {
+                    [unroll]
+                    for(uint vsIdx = 0; vsIdx < MSAASamples_; ++vsIdx)
+                    {
+                        float2 neighborVelocity = MSAALoad_(VelocityTexture, pixelPos + int2(vx, vy), vsIdx);
+                        float neighborVelocityMag = dot(neighborVelocity, neighborVelocity);
+                        if(dot(neighborVelocity, neighborVelocity) > greatestVelocity)
+                        {
+                            velocity = neighborVelocity;
+                            greatestVelocity = neighborVelocityMag;
+                        }
+                    }
+                }
+            }
+        }
+
+
+        VelocityTexture[pixelPos];
+
+        velocity *= TextureSize;
         float2 prevPixelPos = pixelPos - velocity;
         float2 prevUV = prevPixelPos / TextureSize;
 
         float3 prevColor = PrevFrameTexture.SampleLevel(LinearSampler, prevUV, 0.0f).xyz;
 
-        if(ClampPrevColor)
+        if(NeighborhoodClampMode == ClampModes_RGB_Clamp)
+        {
             prevColor = clamp(prevColor, clrMin, clrMax);
+        }
+        else if(NeighborhoodClampMode == ClampModes_RGB_Clip)
+        {
+            prevColor = ClipAABB(clrMin, clrMax, prevColor, m1 / mWeight);
+        }
+        else if(NeighborhoodClampMode == ClampModes_Variance_Clip)
+        {
+            float3 mu = m1 / mWeight;
+            float3 sigma = sqrt(abs(m2 / mWeight - mu * mu));
+            float3 minc = mu - VarianceClipGamma * sigma;
+            float3 maxc = mu + VarianceClipGamma * sigma;
+            prevColor = ClipAABB(minc, maxc, prevColor, mu);
+        }
 
         float3 weightA = saturate(1.0f - TemporalAABlendFactor);
         float3 weightB = saturate(TemporalAABlendFactor);

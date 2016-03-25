@@ -14,10 +14,12 @@ cbuffer AppSettings : register(b7)
     bool EnableTemporalAA;
     float TemporalAABlendFactor;
     bool UseTemporalColorWeighting;
-    bool ClampPrevColor;
+    int NeighborhoodClampMode;
+    float VarianceClipGamma;
     float LowFreqWeight;
     float HiFreqWeight;
     float SharpeningAmount;
+    int DilationMode;
     int CurrentScene;
     float3 LightDirection;
     float3 LightColor;
@@ -56,9 +58,18 @@ static const int FilterTypes_Mitchell = 7;
 static const int FilterTypes_GeneralizedCubic = 8;
 static const int FilterTypes_Sinc = 9;
 
+static const int ClampModes_Disabled = 0;
+static const int ClampModes_RGB_Clamp = 1;
+static const int ClampModes_RGB_Clip = 2;
+static const int ClampModes_Variance_Clip = 3;
+
 static const int JitterModes_None = 0;
 static const int JitterModes_Uniform2x = 1;
 static const int JitterModes_Hammersly16 = 2;
+
+static const int DilationModes_CenterAverage = 0;
+static const int DilationModes_DilateNearestDepth = 1;
+static const int DilationModes_DilateGreatestVelocity = 2;
 
 static const int Scenes_RoboHand = 0;
 static const int Scenes_Plane = 1;

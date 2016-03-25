@@ -144,12 +144,11 @@ void MSAAFilter::CreateRenderTargets()
     const uint32 Quality = NumSamples > 0 ? D3D11_STANDARD_MULTISAMPLE_PATTERN : 0;
     colorTarget.Initialize(device, width, height, DXGI_FORMAT_R16G16B16A16_FLOAT, 1, NumSamples, Quality);
     depthBuffer.Initialize(device, width, height, DXGI_FORMAT_D32_FLOAT, true, NumSamples, Quality);
-    velocityTarget.Initialize(device, width, height, DXGI_FORMAT_R16G16_FLOAT, true, NumSamples, Quality);
+    velocityTarget.Initialize(device, width, height, DXGI_FORMAT_R16G16_SNORM, true, NumSamples, Quality);
 
     if(resolveTarget.Width != width || resolveTarget.Height != height)
     {
         resolveTarget.Initialize(device, width, height, colorTarget.Format);
-        velocityResolveTarget.Initialize(device, width, height, velocityTarget.Format);
         prevFrameTarget.Initialize(device, width, height, colorTarget.Format);
     }
 }
@@ -203,8 +202,6 @@ void MSAAFilter::Update(const Timer& timer)
     Float2 jitter = 0.0f;
     if(AppSettings::EnableTemporalAA && AppSettings::EnableJitter() && AppSettings::UseStandardResolve == false)
     {
-        const float jitterScale = 0.5f;
-
         if(AppSettings::JitterMode == JitterModes::Uniform2x)
         {
             jitter = frameCount % 2 == 0 ? -0.5f : 0.5f;
@@ -215,7 +212,7 @@ void MSAAFilter::Update(const Timer& timer)
             jitter = Hammersley2D(idx, 16) - Float2(0.5f);
         }
 
-        jitter *= jitterScale;
+        jitter *= AppSettings::JitterScale;
 
         const float offsetX = jitter.x * (1.0f / colorTarget.Width);
         const float offsetY = jitter.y * (1.0f / colorTarget.Height);
@@ -252,14 +249,6 @@ void MSAAFilter::RenderAA()
 
     ID3D11DeviceContext* context = deviceManager.ImmediateContext();
 
-    ID3D11ShaderResourceView* velocitySRV = velocityTarget.SRView;
-    if(AppSettings::NumMSAASamples() > 1)
-    {
-        context->ResolveSubresource(velocityResolveTarget.Texture, 0, velocityTarget.Texture, 0, velocityTarget.Format);
-        velocitySRV = velocityResolveTarget.SRView;
-    }
-
-
     ID3D11RenderTargetView* rtvs[1] = { resolveTarget.RTView };
 
     context->OMSetRenderTargets(1, rtvs, nullptr);
@@ -283,8 +272,8 @@ void MSAAFilter::RenderAA()
     resolveConstants.ApplyChanges(context);
     resolveConstants.SetPS(context, 0);
 
-    ID3D11ShaderResourceView* srvs[3] = { colorTarget.SRView, prevFrameTarget.SRView, velocitySRV };
-    context->PSSetShaderResources(0, 3, srvs);
+    ID3D11ShaderResourceView* srvs[] = { colorTarget.SRView, velocityTarget.SRView, depthBuffer.SRView, prevFrameTarget.SRView};
+    context->PSSetShaderResources(0, ArraySize_(srvs), srvs);
 
     ID3D11SamplerState* samplers[1] = { samplerStates.LinearClamp() };
     context->PSSetSamplers(0, 1, samplers);
