@@ -209,7 +209,7 @@ void MSAAFilter::Update(const Timer& timer)
         else if(AppSettings::JitterMode == JitterModes::Hammersly16)
         {
             uint64 idx = frameCount % 16;
-            jitter = Hammersley2D(idx, 16) - Float2(0.5f);
+            jitter = Hammersley2D(idx, 16) * 2.0f - Float2(1.0f);
         }
 
         jitter *= AppSettings::JitterScale;
