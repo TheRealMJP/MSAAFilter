@@ -65,7 +65,9 @@ static const int ClampModes_Variance_Clip = 3;
 
 static const int JitterModes_None = 0;
 static const int JitterModes_Uniform2x = 1;
-static const int JitterModes_Hammersly16 = 2;
+static const int JitterModes_Hammersley4x = 2;
+static const int JitterModes_Hammersley8x = 3;
+static const int JitterModes_Hammersley16x = 4;
 
 static const int DilationModes_CenterAverage = 0;
 static const int DilationModes_DilateNearestDepth = 1;
@@ -73,6 +75,8 @@ static const int DilationModes_DilateGreatestVelocity = 2;
 
 static const int Scenes_RoboHand = 0;
 static const int Scenes_Plane = 1;
+static const int Scenes_Soldier = 2;
+static const int Scenes_Tower = 3;
 
 static const bool EnableAutoExposure = false;
 static const float KeyValue = 0.1150f;

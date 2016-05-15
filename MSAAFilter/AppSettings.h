@@ -52,7 +52,9 @@ enum class JitterModes
 {
     None = 0,
     Uniform2x = 1,
-    Hammersly16 = 2,
+    Hammersley4x = 2,
+    Hammersley8x = 3,
+    Hammersley16x = 4,
 
     NumValues
 };
@@ -74,6 +76,8 @@ enum class Scenes
 {
     RoboHand = 0,
     Plane = 1,
+    Soldier = 2,
+    Tower = 3,
 
     NumValues
 };
@@ -198,7 +202,7 @@ namespace AppSettings
 
     inline bool UseNormalMapping()
     {
-        return CurrentScene == Scenes::Plane;
+        return CurrentScene != Scenes::RoboHand;
     }
 
     inline bool EnableJitter()

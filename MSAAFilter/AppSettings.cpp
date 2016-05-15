@@ -34,11 +34,13 @@ static const char* ClampModesLabels[4] =
     "Variance_Clip",
 };
 
-static const char* JitterModesLabels[3] =
+static const char* JitterModesLabels[5] =
 {
     "None",
     "Uniform2x",
-    "Hammersly16",
+    "Hammersley4x",
+    "Hammersley8x",
+    "Hammersley16x",
 };
 
 static const char* DilationModesLabels[3] =
@@ -48,10 +50,12 @@ static const char* DilationModesLabels[3] =
     "Dilate - Greatest Velocity",
 };
 
-static const char* ScenesLabels[2] =
+static const char* ScenesLabels[4] =
 {
     "RoboHand",
     "Plane",
+    "Soldier",
+    "Tower",
 };
 
 namespace AppSettings
@@ -154,10 +158,10 @@ namespace AppSettings
         NeighborhoodClampMode.Initialize(tweakBar, "NeighborhoodClampMode", "Anti Aliasing", "Neighborhood Clamp Mode", "", ClampModes::Variance_Clip, 4, ClampModesLabels);
         Settings.AddSetting(&NeighborhoodClampMode);
 
-        VarianceClipGamma.Initialize(tweakBar, "VarianceClipGamma", "Anti Aliasing", "Variance Clip Gamma", "", 1.0000f, 0.0000f, 2.0000f, 0.0100f, ConversionMode::None, 1.0000f);
+        VarianceClipGamma.Initialize(tweakBar, "VarianceClipGamma", "Anti Aliasing", "Variance Clip Gamma", "", 1.5000f, 0.0000f, 2.0000f, 0.0100f, ConversionMode::None, 1.0000f);
         Settings.AddSetting(&VarianceClipGamma);
 
-        JitterMode.Initialize(tweakBar, "JitterMode", "Anti Aliasing", "Jitter Mode", "", JitterModes::Uniform2x, 3, JitterModesLabels);
+        JitterMode.Initialize(tweakBar, "JitterMode", "Anti Aliasing", "Jitter Mode", "", JitterModes::Hammersley4x, 5, JitterModesLabels);
         Settings.AddSetting(&JitterMode);
 
         JitterScale.Initialize(tweakBar, "JitterScale", "Anti Aliasing", "Jitter Scale", "", 1.0000f, 0.0000f, 340282300000000000000000000000000000000.0000f, 0.0100f, ConversionMode::None, 1.0000f);
@@ -169,13 +173,13 @@ namespace AppSettings
         HiFreqWeight.Initialize(tweakBar, "HiFreqWeight", "Anti Aliasing", "Hi Freq Weight", "", 0.8500f, 0.0000f, 100.0000f, 0.0100f, ConversionMode::None, 1.0000f);
         Settings.AddSetting(&HiFreqWeight);
 
-        SharpeningAmount.Initialize(tweakBar, "SharpeningAmount", "Anti Aliasing", "Sharpening Amount", "", 0.0000f, 0.0000f, 1.0000f, 0.0100f, ConversionMode::None, 1.0000f);
+        SharpeningAmount.Initialize(tweakBar, "SharpeningAmount", "Anti Aliasing", "Sharpening Amount", "", 0.5000f, 0.0000f, 1.0000f, 0.0100f, ConversionMode::None, 1.0000f);
         Settings.AddSetting(&SharpeningAmount);
 
         DilationMode.Initialize(tweakBar, "DilationMode", "Anti Aliasing", "Dilation Mode", "", DilationModes::DilateNearestDepth, 3, DilationModesLabels);
         Settings.AddSetting(&DilationMode);
 
-        CurrentScene.Initialize(tweakBar, "CurrentScene", "Scene Controls", "Current Scene", "", Scenes::RoboHand, 2, ScenesLabels);
+        CurrentScene.Initialize(tweakBar, "CurrentScene", "Scene Controls", "Current Scene", "", Scenes::RoboHand, 4, ScenesLabels);
         Settings.AddSetting(&CurrentScene);
 
         LightDirection.Initialize(tweakBar, "LightDirection", "Scene Controls", "Light Direction", "The direction of the light", Float3(-0.7500f, 0.9770f, -0.4000f));

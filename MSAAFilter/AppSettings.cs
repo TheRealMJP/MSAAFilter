@@ -42,14 +42,18 @@ public class Settings
     enum Scenes
     {
         RoboHand,
-        Plane
+        Plane,
+        Soldier,
+        Tower,
     }
 
     enum JitterModes
     {
         None,
         Uniform2x,
-        Hammersly16,
+        Hammersley4x,
+        Hammersley8x,
+        Hammersley16x,
     }
 
     enum DilationModes
@@ -125,10 +129,10 @@ public class Settings
 
         [MinValue(0.0f)]
         [MaxValue(2.0f)]
-        float VarianceClipGamma = 1.0f;
+        float VarianceClipGamma = 1.5f;
 
         [UseAsShaderConstant(false)]
-        JitterModes JitterMode = JitterModes.Uniform2x;
+        JitterModes JitterMode = JitterModes.Hammersley4x;
 
         [MinValue(0.0f)]
         [UseAsShaderConstant(false)]
@@ -144,7 +148,7 @@ public class Settings
 
         [MinValue(0.0f)]
         [MaxValue(1.0f)]
-        float SharpeningAmount = 0.0f;
+        float SharpeningAmount = 0.5f;
 
         DilationModes DilationMode = DilationModes.DilateNearestDepth;
     }

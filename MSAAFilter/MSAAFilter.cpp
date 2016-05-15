@@ -38,14 +38,24 @@ const float WindowHeightF = static_cast<float>(WindowHeight);
 static const float NearClip = 0.01f;
 static const float FarClip = 100.0f;
 
-static const float ModelScales[uint64(Scenes::NumValues)] = { 0.1f, 1.0f };
-static const Float3 ModelPositions[uint64(Scenes::NumValues)] = { Float3(-1.0f, 2.0f, 0.0f), Float3(0.0f, 0.0f, 0.0f) };
+static const float ModelScales[uint64(Scenes::NumValues)] = { 0.1f, 1.0f, 5.0f, 0.01f, };
+static const Float3 ModelPositions[uint64(Scenes::NumValues)] = { Float3(-1.0f, 2.0f, 0.0f), Float3(0.0f, 0.0f, 0.0f), Float3(0.0f, 0.0f, 0.0f), Float3(0.0f, 0.0f, 0.0f) };
 
 // Model filenames
-static const wstring ModelPaths[uint64(Scenes::NumValues)] =
+static const wchar* ModelPaths[uint64(Scenes::NumValues)] =
 {
     L"..\\Content\\Models\\RoboHand\\RoboHand.meshdata",
-    L"",
+    nullptr,
+    L"..\\Content\\Models\\Soldier\\Soldier.sdkmesh",
+    L"..\\Content\\Models\\Tower\\Tower.sdkmesh",
+};
+
+static const wchar* ModelNormalMapSuffix[uint64(Scenes::NumValues)] =
+{
+    nullptr,
+    nullptr,
+    L"_norm",
+    nullptr
 };
 
 MSAAFilter::MSAAFilter() :  App(L"MSAA Filtering 2.0", MAKEINTRESOURCEW(IDI_DEFAULT)),
@@ -97,8 +107,10 @@ void MSAAFilter::Initialize()
         if(i == uint64(Scenes::Plane))
             models[i].GeneratePlaneScene(device, Float2(10.0f, 10.0f), Float3(), Quaternion(),
                                          L"", L"Bricks_NML.dds");
+        else if(i == uint64(Scenes::RoboHand))
+            models[i].CreateFromMeshData(device, ModelPaths[i]);
         else
-            models[i].CreateFromMeshData(device, ModelPaths[i].c_str());
+            models[i].CreateFromSDKMeshFile(device, ModelPaths[i], ModelNormalMapSuffix[i], true);
     }
 
     modelOrientations[uint64(Scenes::RoboHand)] = Quaternion(0.41f, -0.55f, -0.29f, 0.67f);
@@ -206,7 +218,17 @@ void MSAAFilter::Update(const Timer& timer)
         {
             jitter = frameCount % 2 == 0 ? -0.5f : 0.5f;
         }
-        else if(AppSettings::JitterMode == JitterModes::Hammersly16)
+        else if(AppSettings::JitterMode == JitterModes::Hammersley4x)
+        {
+            uint64 idx = frameCount % 4;
+            jitter = Hammersley2D(idx, 4) * 2.0f - Float2(1.0f);
+        }
+        else if(AppSettings::JitterMode == JitterModes::Hammersley8x)
+        {
+            uint64 idx = frameCount % 8;
+            jitter = Hammersley2D(idx, 8) * 2.0f - Float2(1.0f);
+        }
+        else if(AppSettings::JitterMode == JitterModes::Hammersley16x)
         {
             uint64 idx = frameCount % 16;
             jitter = Hammersley2D(idx, 16) * 2.0f - Float2(1.0f);

@@ -322,6 +322,9 @@ PSOutput PS(in PSInput input)
     #endif
 
     float4 albedoMap = 1.0f;
+    #if UseNormalMapping_
+        albedoMap = AlbedoMap.Sample(AnisoSampler, input.UV);
+    #endif
 
     float3 diffuseAlbedo = albedoMap.xyz;
     diffuseAlbedo *= DiffuseIntensity;
