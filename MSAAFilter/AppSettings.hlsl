@@ -20,6 +20,7 @@ cbuffer AppSettings : register(b7)
     float HiFreqWeight;
     float SharpeningAmount;
     int DilationMode;
+    float MipBias;
     int CurrentScene;
     float3 LightDirection;
     float3 LightColor;
@@ -36,6 +37,7 @@ cbuffer AppSettings : register(b7)
     float ModelRotationSpeed;
     bool DoubleSyncInterval;
     float ExposureScale;
+    bool EnableZoom;
     float BloomExposure;
     float BloomMagnitude;
     float BloomBlurSigma;
@@ -74,9 +76,10 @@ static const int DilationModes_DilateNearestDepth = 1;
 static const int DilationModes_DilateGreatestVelocity = 2;
 
 static const int Scenes_RoboHand = 0;
-static const int Scenes_Plane = 1;
-static const int Scenes_Soldier = 2;
-static const int Scenes_Tower = 3;
+static const int Scenes_BrickPlane = 1;
+static const int Scenes_UIPlane = 2;
+static const int Scenes_Soldier = 3;
+static const int Scenes_Tower = 4;
 
 static const bool EnableAutoExposure = false;
 static const float KeyValue = 0.1150f;

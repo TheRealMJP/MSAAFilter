@@ -409,8 +409,15 @@ void MeshRenderer::Render(ID3D11DeviceContext* context, const Camera& camera, co
     context->OMSetDepthStencilState(depthStencilStates.DepthEnabled(), 0);
     context->RSSetState(rasterizerStates.BackFaceCull());
 
+    if(mipBiasSampler == nullptr || AppSettings::MipBias.Changed())
+    {
+        D3D11_SAMPLER_DESC desc = SamplerStates::AnisotropicDesc();
+        desc.MipLODBias = AppSettings::MipBias;
+        DXCall(device->CreateSamplerState(&desc, &mipBiasSampler));
+    }
+
     ID3D11SamplerState* sampStates[3] = {
-        samplerStates.Anisotropic(),
+        AppSettings::EnableTemporalAA ?  mipBiasSampler : samplerStates.Anisotropic(),
         evsmSampler,
         samplerStates.LinearClamp(),
     };

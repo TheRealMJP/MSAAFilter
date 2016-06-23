@@ -50,10 +50,11 @@ static const char* DilationModesLabels[3] =
     "Dilate - Greatest Velocity",
 };
 
-static const char* ScenesLabels[4] =
+static const char* ScenesLabels[5] =
 {
     "RoboHand",
-    "Plane",
+    "Plane (Bricks)",
+    "Plane (UI)",
     "Soldier",
     "Tower",
 };
@@ -83,6 +84,7 @@ namespace AppSettings
     FloatSetting HiFreqWeight;
     FloatSetting SharpeningAmount;
     DilationModesSetting DilationMode;
+    FloatSetting MipBias;
     ScenesSetting CurrentScene;
     DirectionSetting LightDirection;
     ColorSetting LightColor;
@@ -99,6 +101,7 @@ namespace AppSettings
     FloatSetting ModelRotationSpeed;
     BoolSetting DoubleSyncInterval;
     FloatSetting ExposureScale;
+    BoolSetting EnableZoom;
     FloatSetting BloomExposure;
     FloatSetting BloomMagnitude;
     FloatSetting BloomBlurSigma;
@@ -149,7 +152,7 @@ namespace AppSettings
         EnableTemporalAA.Initialize(tweakBar, "EnableTemporalAA", "Anti Aliasing", "Enable Temporal AA", "", true);
         Settings.AddSetting(&EnableTemporalAA);
 
-        TemporalAABlendFactor.Initialize(tweakBar, "TemporalAABlendFactor", "Anti Aliasing", "Temporal AABlend Factor", "", 0.9000f, 0.0000f, 1.0000f, 0.0100f, ConversionMode::None, 1.0000f);
+        TemporalAABlendFactor.Initialize(tweakBar, "TemporalAABlendFactor", "Anti Aliasing", "Temporal AABlend Factor", "", 0.9000f, 0.0000f, 1.0000f, 0.0010f, ConversionMode::None, 1.0000f);
         Settings.AddSetting(&TemporalAABlendFactor);
 
         UseTemporalColorWeighting.Initialize(tweakBar, "UseTemporalColorWeighting", "Anti Aliasing", "Use Temporal Color Weighting", "", false);
@@ -179,7 +182,10 @@ namespace AppSettings
         DilationMode.Initialize(tweakBar, "DilationMode", "Anti Aliasing", "Dilation Mode", "", DilationModes::DilateNearestDepth, 3, DilationModesLabels);
         Settings.AddSetting(&DilationMode);
 
-        CurrentScene.Initialize(tweakBar, "CurrentScene", "Scene Controls", "Current Scene", "", Scenes::RoboHand, 4, ScenesLabels);
+        MipBias.Initialize(tweakBar, "MipBias", "Anti Aliasing", "Mip Bias", "", 0.0000f, -340282300000000000000000000000000000000.0000f, 0.0000f, 0.0100f, ConversionMode::None, 1.0000f);
+        Settings.AddSetting(&MipBias);
+
+        CurrentScene.Initialize(tweakBar, "CurrentScene", "Scene Controls", "Current Scene", "", Scenes::RoboHand, 5, ScenesLabels);
         Settings.AddSetting(&CurrentScene);
 
         LightDirection.Initialize(tweakBar, "LightDirection", "Scene Controls", "Light Direction", "The direction of the light", Float3(-0.7500f, 0.9770f, -0.4000f));
@@ -226,6 +232,9 @@ namespace AppSettings
 
         ExposureScale.Initialize(tweakBar, "ExposureScale", "Scene Controls", "Exposure Scale", "", 0.0000f, -16.0000f, 16.0000f, 0.0100f, ConversionMode::None, 1.0000f);
         Settings.AddSetting(&ExposureScale);
+
+        EnableZoom.Initialize(tweakBar, "EnableZoom", "Scene Controls", "Enable Zoom", "", false);
+        Settings.AddSetting(&EnableZoom);
 
         BloomExposure.Initialize(tweakBar, "BloomExposure", "Post Processing", "Bloom Exposure Offset", "Exposure offset applied to generate the input of the bloom pass", -4.0000f, -10.0000f, 0.0000f, 0.0100f, ConversionMode::None, 1.0000f);
         Settings.AddSetting(&BloomExposure);
@@ -274,6 +283,7 @@ namespace AppSettings
         CBuffer.Data.HiFreqWeight = HiFreqWeight;
         CBuffer.Data.SharpeningAmount = SharpeningAmount;
         CBuffer.Data.DilationMode = DilationMode;
+        CBuffer.Data.MipBias = MipBias;
         CBuffer.Data.CurrentScene = CurrentScene;
         CBuffer.Data.LightDirection = LightDirection;
         CBuffer.Data.LightColor = LightColor;
@@ -290,6 +300,7 @@ namespace AppSettings
         CBuffer.Data.ModelRotationSpeed = ModelRotationSpeed;
         CBuffer.Data.DoubleSyncInterval = DoubleSyncInterval;
         CBuffer.Data.ExposureScale = ExposureScale;
+        CBuffer.Data.EnableZoom = EnableZoom;
         CBuffer.Data.BloomExposure = BloomExposure;
         CBuffer.Data.BloomMagnitude = BloomMagnitude;
         CBuffer.Data.BloomBlurSigma = BloomBlurSigma;

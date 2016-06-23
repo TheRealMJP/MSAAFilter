@@ -103,6 +103,9 @@ protected:
 
     Float4x4 prevWVP;
 
+    ID3D11SamplerStatePtr mipBiasSampler;
+    float currMipBias = 0.0f;
+
     // Constant buffers
     struct MeshVSConstants
     {

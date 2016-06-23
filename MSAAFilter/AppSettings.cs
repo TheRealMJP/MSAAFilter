@@ -42,7 +42,13 @@ public class Settings
     enum Scenes
     {
         RoboHand,
-        Plane,
+
+        [EnumLabel("Plane (Bricks)")]
+        BrickPlane,
+
+        [EnumLabel("Plane (UI)")]
+        UIPlane,
+
         Soldier,
         Tower,
     }
@@ -121,6 +127,7 @@ public class Settings
 
         [MinValue(0.0f)]
         [MaxValue(1.0f)]
+        [StepSize(0.001f)]
         float TemporalAABlendFactor = 0.9f;
 
         bool UseTemporalColorWeighting = false;
@@ -151,6 +158,9 @@ public class Settings
         float SharpeningAmount = 0.5f;
 
         DilationModes DilationMode = DilationModes.DilateNearestDepth;
+
+        [MaxValue(0.0f)]
+        float MipBias = 0.0f;
     }
 
     public class SceneControls
@@ -218,6 +228,8 @@ public class Settings
         [MinValue(-16.0f)]
         [MaxValue(16.0f)]
         float ExposureScale = 0.0f;
+
+        bool EnableZoom = false;
     }
 
     public class PostProcessing

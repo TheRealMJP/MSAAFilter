@@ -38,13 +38,14 @@ const float WindowHeightF = static_cast<float>(WindowHeight);
 static const float NearClip = 0.01f;
 static const float FarClip = 100.0f;
 
-static const float ModelScales[uint64(Scenes::NumValues)] = { 0.1f, 1.0f, 5.0f, 0.01f, };
-static const Float3 ModelPositions[uint64(Scenes::NumValues)] = { Float3(-1.0f, 2.0f, 0.0f), Float3(0.0f, 0.0f, 0.0f), Float3(0.0f, 0.0f, 0.0f), Float3(0.0f, 0.0f, 0.0f) };
+static const float ModelScales[uint64(Scenes::NumValues)] = { 0.1f, 1.0f, 1.0f, 5.0f, 0.01f, };
+static const Float3 ModelPositions[uint64(Scenes::NumValues)] = { Float3(-1.0f, 2.0f, 0.0f), Float3(0.0f, 0.0f, 0.0f), Float3(0.0f, 0.0f, 0.0f), Float3(0.0f, 0.0f, 0.0f), Float3(0.0f, 0.0f, 0.0f) };
 
 // Model filenames
 static const wchar* ModelPaths[uint64(Scenes::NumValues)] =
 {
     L"..\\Content\\Models\\RoboHand\\RoboHand.meshdata",
+    nullptr,
     nullptr,
     L"..\\Content\\Models\\Soldier\\Soldier.sdkmesh",
     L"..\\Content\\Models\\Tower\\Tower.sdkmesh",
@@ -52,6 +53,7 @@ static const wchar* ModelPaths[uint64(Scenes::NumValues)] =
 
 static const wchar* ModelNormalMapSuffix[uint64(Scenes::NumValues)] =
 {
+    nullptr,
     nullptr,
     nullptr,
     L"_norm",
@@ -104,9 +106,12 @@ void MSAAFilter::Initialize()
     // Load the scenes
     for(uint64 i = 0; i < uint64(Scenes::NumValues); ++i)
     {
-        if(i == uint64(Scenes::Plane))
+        if(i == uint64(Scenes::BrickPlane))
             models[i].GeneratePlaneScene(device, Float2(10.0f, 10.0f), Float3(), Quaternion(),
-                                         L"", L"Bricks_NML.dds");
+                                         L"Bricks.dds", L"Bricks_NML.dds");
+        else if(i == uint64(Scenes::UIPlane))
+            models[i].GeneratePlaneScene(device, Float2(10.0f, 10.0f), Float3(), Quaternion(),
+                                         L"UI.png", L"");
         else if(i == uint64(Scenes::RoboHand))
             models[i].CreateFromMeshData(device, ModelPaths[i]);
         else

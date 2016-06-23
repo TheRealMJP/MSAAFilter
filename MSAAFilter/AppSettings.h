@@ -75,9 +75,10 @@ typedef EnumSettingT<DilationModes> DilationModesSetting;
 enum class Scenes
 {
     RoboHand = 0,
-    Plane = 1,
-    Soldier = 2,
-    Tower = 3,
+    BrickPlane = 1,
+    UIPlane = 2,
+    Soldier = 3,
+    Tower = 4,
 
     NumValues
 };
@@ -113,6 +114,7 @@ namespace AppSettings
     extern FloatSetting HiFreqWeight;
     extern FloatSetting SharpeningAmount;
     extern DilationModesSetting DilationMode;
+    extern FloatSetting MipBias;
     extern ScenesSetting CurrentScene;
     extern DirectionSetting LightDirection;
     extern ColorSetting LightColor;
@@ -129,6 +131,7 @@ namespace AppSettings
     extern FloatSetting ModelRotationSpeed;
     extern BoolSetting DoubleSyncInterval;
     extern FloatSetting ExposureScale;
+    extern BoolSetting EnableZoom;
     extern FloatSetting BloomExposure;
     extern FloatSetting BloomMagnitude;
     extern FloatSetting BloomBlurSigma;
@@ -156,9 +159,10 @@ namespace AppSettings
         float HiFreqWeight;
         float SharpeningAmount;
         int32 DilationMode;
+        float MipBias;
         int32 CurrentScene;
-        Float3 LightDirection;
-        Float3 LightColor;
+        Float4Align Float3 LightDirection;
+        Float4Align Float3 LightColor;
         bool32 EnableDirectLighting;
         bool32 EnableAmbientLighting;
         bool32 RenderBackground;
@@ -172,6 +176,7 @@ namespace AppSettings
         float ModelRotationSpeed;
         bool32 DoubleSyncInterval;
         float ExposureScale;
+        bool32 EnableZoom;
         float BloomExposure;
         float BloomMagnitude;
         float BloomBlurSigma;

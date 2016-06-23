@@ -321,9 +321,11 @@ PSOutput PS(in PSInput input)
         }
     #endif
 
-    float4 albedoMap = 1.0f;
+    float3 albedoMap = 1.0f;
     #if UseNormalMapping_
-        albedoMap = AlbedoMap.Sample(AnisoSampler, input.UV);
+        albedoMap = AlbedoMap.Sample(AnisoSampler, input.UV).xyz;
+        if(CurrentScene == Scenes_BrickPlane)
+            albedoMap *= albedoMap;
     #endif
 
     float3 diffuseAlbedo = albedoMap.xyz;
@@ -368,6 +370,9 @@ PSOutput PS(in PSInput input)
 
         lighting += SpecularCubemap.SampleLevel(LinearSampler, reflectWS, mipLevel) * fresnel;
     }
+
+    if(CurrentScene == Scenes_UIPlane)
+        lighting = albedoMap;
 
     PSOutput output;
     output.Color = float4(lighting, 1.0f);

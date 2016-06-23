@@ -157,6 +157,13 @@ float4 BlurV(in PSInput input) : SV_Target
 // Applies exposure and tone mapping to the input
 float4 ToneMap(in PSInput input) : SV_Target0
 {
+    if(EnableZoom)
+    {
+        float2 uv = input.TexCoord * 2.0f - 1.0f;
+        uv /= 4.0f;
+        input.TexCoord = uv * 0.5f + 0.5f;
+    }
+
     // Tone map the primary input
     float avgLuminance = GetAvgLuminance(InputTexture1);
     float3 color = InputTexture0.Sample(PointSampler, input.TexCoord).rgb;
