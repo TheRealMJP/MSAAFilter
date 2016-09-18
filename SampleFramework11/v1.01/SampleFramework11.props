@@ -5,8 +5,8 @@
     <SampleFrameworkDir>../SampleFramework11/v1.01/</SampleFrameworkDir>
   </PropertyGroup>
   <PropertyGroup>
-    <LibraryPath>$(ProjectDir)..\Externals\sun\lib;$(ProjectDir)..\Externals\HosekSky\Lib 2013;$(ProjectDir)..\Externals\DirectXTex\Lib\$(Configuration);$(ProjectDir)..\Externals\Assimp-3.1.1\lib;$(ProjectDir)..\Externals\AntTweakBar\lib;$(Configuration);$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir)$(SampleFrameworkDir);$(ProjectDir)</IncludePath>
+    <LibraryPath>$(ProjectDir)..\Externals\HosekSky\Lib 2013;$(ProjectDir)..\Externals\DirectXTex\Lib\$(Configuration);$(ProjectDir)..\Externals\Assimp-3.1.1\lib;$(ProjectDir)..\Externals\AntTweakBar\lib;$(Configuration);$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir)$(SampleFrameworkDir);$(ProjectDir);$(ProjectDir)..\Externals\DirectXTex\Include</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>

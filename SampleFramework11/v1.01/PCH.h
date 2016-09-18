@@ -87,7 +87,7 @@ typedef uint32_t bool32;
 #include <DirectXCollision.h>
 
 // DirectX Tex
-#include "..\\..\\Externals\\DirectXTex\\Include\\DirectXTex.h"
+#include <DirectXTex.h>
 
 using namespace DirectX;
 using namespace DirectX::PackedVector;
