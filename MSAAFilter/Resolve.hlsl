@@ -328,7 +328,7 @@ float3 Reproject(in float2 pixelPos)
             }
         }
 
-        return sum / totalWeight;
+        return max(sum / totalWeight, 0.0f);
     }
 }
 
