@@ -22,10 +22,6 @@
     #define MSAASamples_ 1
 #endif
 
-#ifndef FilterType_
-    #define FilterType_ 0
-#endif
-
 #define MSAA_ (MSAASamples_ > 1)
 
 // These are the sub-sample locations for the 2x, 4x, and 8x standard multisample patterns.
@@ -75,6 +71,7 @@
 Texture2D<float4> PrevFrameTexture : register(t3);
 
 SamplerState LinearSampler : register(s0);
+SamplerState PointSampler : register(s1);
 
 cbuffer ResolveConstants : register(b0)
 {
@@ -88,9 +85,10 @@ cbuffer ResolveConstants : register(b0)
     #define MSAALoad_(tex, addr, subSampleIdx) tex[uint2(addr)]
 #endif
 
+// All filtering functions assume that 'x' is normalized to [0, 1], where 1 == FilteRadius
 float FilterBox(in float x)
 {
-    return 1.0f;
+    return x <= 1.0f;
 }
 
 static float FilterTriangle(in float x)
@@ -107,9 +105,6 @@ static float FilterGaussian(in float x)
 
  float FilterCubic(in float x, in float B, in float C)
 {
-    // Rescale from [-2, 2] range to [-FilterWidth, FilterWidth]
-    x *= 2.0f;
-
     float y = 0.0f;
     float x2 = x * x;
     float x3 = x * x * x;
@@ -121,11 +116,11 @@ static float FilterGaussian(in float x)
     return y / 6.0f;
 }
 
-float FilterSinc(in float x)
+float FilterSinc(in float x, in float filterRadius)
 {
     float s;
 
-    x *= FilterSize;
+    x *= filterRadius * 2.0f;
 
     if(x < 0.001f)
         s = 1.0f;
@@ -151,28 +146,32 @@ float FilterSmoothstep(in float x)
     return 1.0f - smoothstep(0.0f, 1.0f, x);
 }
 
-float Filter(in float x)
+float Filter(in float x, in int filterType, in float filterRadius, in bool rescaleCubic)
 {
-    if(FilterType == FilterTypes_Box)
+    // Cubic filters naturually work in a [-2, 2] domain. For the resolve case we
+    // want to rescale the filter so that it works in [-1, 1] instead
+    float cubicX = rescaleCubic ? x * 2.0f : x;
+
+    if(filterType == FilterTypes_Box)
         return FilterBox(x);
-    else if(FilterType == FilterTypes_Triangle)
+    else if(filterType == FilterTypes_Triangle)
         return FilterTriangle(x);
-    else if(FilterType == FilterTypes_Gaussian)
+    else if(filterType == FilterTypes_Gaussian)
         return FilterGaussian(x);
-    else if(FilterType == FilterTypes_BlackmanHarris)
+    else if(filterType == FilterTypes_BlackmanHarris)
         return FilterBlackmanHarris(x);
-    else if(FilterType == FilterTypes_Smoothstep)
+    else if(filterType == FilterTypes_Smoothstep)
         return FilterSmoothstep(x);
-    else if(FilterType == FilterTypes_BSpline)
-        return FilterCubic(x, 1.0, 0.0f);
-    else if(FilterType == FilterTypes_CatmullRom)
-        return FilterCubic(x, 0, 0.5f);
-    else if(FilterType == FilterTypes_Mitchell)
-        return FilterCubic(x, 1 / 3.0f, 1 / 3.0f);
-    else if(FilterType == FilterTypes_GeneralizedCubic)
-        return FilterCubic(x, CubicB, CubicC);
-    else if(FilterType == FilterTypes_Sinc)
-        return FilterSinc(x);
+    else if(filterType == FilterTypes_BSpline)
+        return FilterCubic(cubicX, 1.0, 0.0f);
+    else if(filterType == FilterTypes_CatmullRom)
+        return FilterCubic(cubicX, 0, 0.5f);
+    else if(filterType == FilterTypes_Mitchell)
+        return FilterCubic(cubicX, 1 / 3.0f, 1 / 3.0f);
+    else if(filterType == FilterTypes_GeneralizedCubic)
+        return FilterCubic(cubicX, CubicB, CubicC);
+    else if(filterType == FilterTypes_Sinc)
+        return FilterSinc(x, filterRadius);
     else
         return 1.0f;
 }
@@ -239,6 +238,100 @@ float3 ClipAABB(float3 aabbMin, float3 aabbMax, float3 prevSample, float3 avg)
     #endif
 }
 
+float3 Reproject(in float2 pixelPos)
+{
+    float2 velocity = 0.0f;
+    if(DilationMode == DilationModes_CenterAverage)
+    {
+        [unroll]
+        for(uint vsIdx = 0; vsIdx < MSAASamples_; ++vsIdx)
+            velocity += MSAALoad_(VelocityTexture, pixelPos, vsIdx);
+        velocity /= MSAASamples_;
+    }
+    else if(DilationMode == DilationModes_DilateNearestDepth)
+    {
+        float closestDepth = 10.0f;
+        for(int vy = -1; vy <= 1; ++vy)
+        {
+            for(int vx = -1; vx <= 1; ++vx)
+            {
+                [unroll]
+                for(uint vsIdx = 0; vsIdx < MSAASamples_; ++vsIdx)
+                {
+                    float2 neighborVelocity = MSAALoad_(VelocityTexture, pixelPos + int2(vx, vy), vsIdx);
+                    float neighborDepth = MSAALoad_(DepthTexture, pixelPos + int2(vx, vy), vsIdx);
+                    if(neighborDepth < closestDepth)
+                    {
+                        velocity = neighborVelocity;
+                        closestDepth = neighborDepth;
+                    }
+                }
+            }
+        }
+    }
+    else if(DilationMode == DilationModes_DilateGreatestVelocity)
+    {
+        float greatestVelocity = -1.0f;
+        for(int vy = -1; vy <= 1; ++vy)
+        {
+            for(int vx = -1; vx <= 1; ++vx)
+            {
+                [unroll]
+                for(uint vsIdx = 0; vsIdx < MSAASamples_; ++vsIdx)
+                {
+                    float2 neighborVelocity = MSAALoad_(VelocityTexture, pixelPos + int2(vx, vy), vsIdx);
+                    float neighborVelocityMag = dot(neighborVelocity, neighborVelocity);
+                    if(dot(neighborVelocity, neighborVelocity) > greatestVelocity)
+                    {
+                        velocity = neighborVelocity;
+                        greatestVelocity = neighborVelocityMag;
+                    }
+                }
+            }
+        }
+    }
+
+    velocity *= TextureSize;
+    float2 reprojectedPos = pixelPos - velocity;
+    float2 reprojectedUV = reprojectedPos / TextureSize;
+
+    if(UseStandardReprojection)
+    {
+        return PrevFrameTexture.SampleLevel(LinearSampler, reprojectedUV, 0.0f).xyz;
+    }
+    else
+    {
+        float3 sum = 0.0f;
+        float totalWeight = 0.0f;
+
+        for(int ty = -1; ty <= 2; ++ty)
+        {
+            for(int tx = -1; tx <= 2; ++tx)
+            {
+                float2 samplePos = floor(reprojectedPos + float2(tx, ty)) + 0.5f;
+                float3 reprojectedSample = PrevFrameTexture[int2(samplePos)].xyz;
+
+                float2 sampleDist = abs(samplePos - reprojectedPos);
+                float filterWeight = Filter(sampleDist.x, ReprojectionFilter, 1.0f, false) *
+                                     Filter(sampleDist.y, ReprojectionFilter, 1.0f, false);
+
+                float sampleLum = Luminance(reprojectedSample);
+
+                if(UseExposureFiltering)
+                    sampleLum *= exp2(ManualExposure - ExposureScale + ExposureFilterOffset);
+
+                if(InverseLuminanceFiltering)
+                    filterWeight *= 1.0f / (1.0f + sampleLum);
+
+                sum += reprojectedSample * filterWeight;
+                totalWeight += filterWeight;
+            }
+        }
+
+        return sum / totalWeight;
+    }
+}
+
 float4 ResolvePS(in float4 Position : SV_Position) : SV_Target0
 {
     float2 pixelPos = Position.xy;
@@ -258,6 +351,8 @@ float4 ResolvePS(in float4 Position : SV_Position) : SV_Target0
         const int SampleRadius_ = 1;
     #endif
 
+    const float filterRadius = ResolveFilterDiameter / 2.0f;
+
     for(int y = -SampleRadius_; y <= SampleRadius_; ++y)
     {
         for(int x = -SampleRadius_; x <= SampleRadius_; ++x)
@@ -270,8 +365,7 @@ float4 ResolvePS(in float4 Position : SV_Position) : SV_Target0
             for(uint subSampleIdx = 0; subSampleIdx < MSAASamples_; ++subSampleIdx)
             {
                 float2 subSampleOffset = SubSampleOffsets[subSampleIdx].xy;
-                float2 sampleDist = abs(sampleOffset + subSampleOffset) / (FilterSize / 2.0f);
-                // float2 sampleDist = length(sampleOffset + subSampleOffset) / (FilterSize / 2.0f);
+                float2 sampleDist = abs(sampleOffset + subSampleOffset) / (ResolveFilterDiameter / 2.0f);
 
                 #if MSAA_
                     bool useSample = all(sampleDist <= 1.0f);
@@ -284,7 +378,8 @@ float4 ResolvePS(in float4 Position : SV_Position) : SV_Target0
                     float3 sample = MSAALoad_(InputTexture, samplePos, subSampleIdx).xyz;
                     sample = max(sample, 0.0f);
 
-                    float weight = Filter(sampleDist.x) * Filter(sampleDist.y);
+                    float weight = Filter(sampleDist.x, ResolveFilterType, filterRadius, true) *
+                                   Filter(sampleDist.y, ResolveFilterType, filterRadius, true);
                     clrMin = min(clrMin, sample);
                     clrMax = max(clrMax, sample);
 
@@ -318,66 +413,7 @@ float4 ResolvePS(in float4 Position : SV_Position) : SV_Target0
     if(EnableTemporalAA)
     {
         float3 currColor = output;
-
-        float2 velocity = 0.0f;
-        if(DilationMode == DilationModes_CenterAverage)
-        {
-            [unroll]
-            for(uint vsIdx = 0; vsIdx < MSAASamples_; ++vsIdx)
-                velocity += MSAALoad_(VelocityTexture, pixelPos, vsIdx);
-            velocity /= MSAASamples_;
-        }
-        else if(DilationMode == DilationModes_DilateNearestDepth)
-        {
-            float closestDepth = 10.0f;
-            for(int vy = -1; vy <= 1; ++vy)
-            {
-                for(int vx = -1; vx <= 1; ++vx)
-                {
-                    [unroll]
-                    for(uint vsIdx = 0; vsIdx < MSAASamples_; ++vsIdx)
-                    {
-                        float2 neighborVelocity = MSAALoad_(VelocityTexture, pixelPos + int2(vx, vy), vsIdx);
-                        float neighborDepth = MSAALoad_(DepthTexture, pixelPos + int2(vx, vy), vsIdx);
-                        if(neighborDepth < closestDepth)
-                        {
-                            velocity = neighborVelocity;
-                            closestDepth = neighborDepth;
-                        }
-                    }
-                }
-            }
-        }
-        else if(DilationMode == DilationModes_DilateGreatestVelocity)
-        {
-            float greatestVelocity = -1.0f;
-            for(int vy = -1; vy <= 1; ++vy)
-            {
-                for(int vx = -1; vx <= 1; ++vx)
-                {
-                    [unroll]
-                    for(uint vsIdx = 0; vsIdx < MSAASamples_; ++vsIdx)
-                    {
-                        float2 neighborVelocity = MSAALoad_(VelocityTexture, pixelPos + int2(vx, vy), vsIdx);
-                        float neighborVelocityMag = dot(neighborVelocity, neighborVelocity);
-                        if(dot(neighborVelocity, neighborVelocity) > greatestVelocity)
-                        {
-                            velocity = neighborVelocity;
-                            greatestVelocity = neighborVelocityMag;
-                        }
-                    }
-                }
-            }
-        }
-
-
-        VelocityTexture[pixelPos];
-
-        velocity *= TextureSize;
-        float2 prevPixelPos = pixelPos - velocity;
-        float2 prevUV = prevPixelPos / TextureSize;
-
-        float3 prevColor = PrevFrameTexture.SampleLevel(LinearSampler, prevUV, 0.0f).xyz;
+        float3 prevColor = Reproject(pixelPos);
 
         if(NeighborhoodClampMode == ClampModes_RGB_Clamp)
         {

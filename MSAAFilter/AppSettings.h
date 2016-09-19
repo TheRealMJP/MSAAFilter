@@ -92,8 +92,8 @@ namespace AppSettings
     static const float AdaptationRate = 0.5000f;
 
     extern MSAAModesSetting MSAAMode;
-    extern FilterTypesSetting FilterType;
-    extern FloatSetting FilterSize;
+    extern FilterTypesSetting ResolveFilterType;
+    extern FloatSetting ResolveFilterDiameter;
     extern FloatSetting GaussianSigma;
     extern FloatSetting CubicB;
     extern FloatSetting CubicC;
@@ -115,6 +115,8 @@ namespace AppSettings
     extern FloatSetting SharpeningAmount;
     extern DilationModesSetting DilationMode;
     extern FloatSetting MipBias;
+    extern FilterTypesSetting ReprojectionFilter;
+    extern BoolSetting UseStandardReprojection;
     extern ScenesSetting CurrentScene;
     extern DirectionSetting LightDirection;
     extern ColorSetting LightColor;
@@ -140,8 +142,8 @@ namespace AppSettings
     struct AppSettingsCBuffer
     {
         int32 MSAAMode;
-        int32 FilterType;
-        float FilterSize;
+        int32 ResolveFilterType;
+        float ResolveFilterDiameter;
         float GaussianSigma;
         float CubicB;
         float CubicC;
@@ -160,8 +162,10 @@ namespace AppSettings
         float SharpeningAmount;
         int32 DilationMode;
         float MipBias;
+        int32 ReprojectionFilter;
+        bool32 UseStandardReprojection;
         int32 CurrentScene;
-        Float4Align Float3 LightDirection;
+        Float3 LightDirection;
         Float4Align Float3 LightColor;
         bool32 EnableDirectLighting;
         bool32 EnableAmbientLighting;

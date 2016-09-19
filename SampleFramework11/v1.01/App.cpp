@@ -58,6 +58,8 @@ int32 App::Run()
             freopen_s(&consoleFile, "CONOUT$", "wb", stdout);
         }
 
+        window.SetClientArea(deviceManager.BackBufferWidth(), deviceManager.BackBufferHeight());
+
         if(showWindow)
             window.ShowWindow();
 

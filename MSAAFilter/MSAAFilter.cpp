@@ -30,11 +30,6 @@
 using namespace SampleFramework11;
 using std::wstring;
 
-const uint32 WindowWidth = 1280;
-const uint32 WindowHeight = 720;
-const float WindowWidthF = static_cast<float>(WindowWidth);
-const float WindowHeightF = static_cast<float>(WindowHeight);
-
 static const float NearClip = 0.01f;
 static const float FarClip = 100.0f;
 
@@ -61,13 +56,9 @@ static const wchar* ModelNormalMapSuffix[uint64(Scenes::NumValues)] =
 };
 
 MSAAFilter::MSAAFilter() :  App(L"MSAA Filtering 2.0", MAKEINTRESOURCEW(IDI_DEFAULT)),
-                            camera(WindowWidthF / WindowHeightF, Pi_4 * 0.75f, NearClip, FarClip)
+                            camera(16.0f / 9.0f, Pi_4 * 0.75f, NearClip, FarClip)
 {
-    deviceManager.SetBackBufferWidth(WindowWidth);
-    deviceManager.SetBackBufferHeight(WindowHeight);
     deviceManager.SetMinFeatureLevel(D3D_FEATURE_LEVEL_11_0);
-
-    window.SetClientArea(WindowWidth, WindowHeight);
 }
 
 void MSAAFilter::BeforeReset()
@@ -273,6 +264,7 @@ void MSAAFilter::Update(const Timer& timer)
 void MSAAFilter::RenderAA()
 {
     PIXEvent pixEvent(L"MSAA Resolve + Temporal AA");
+    ProfileBlock profileBlock(L"MSAA Resolve + Temporal AA");
 
     ID3D11DeviceContext* context = deviceManager.ImmediateContext();
 
@@ -289,7 +281,7 @@ void MSAAFilter::RenderAA()
         return;
     }
 
-    const uint32 SampleRadius = static_cast<uint32>((AppSettings::FilterSize / 2.0f) + 0.499f);
+    const uint32 SampleRadius = static_cast<uint32>((AppSettings::ResolveFilterDiameter / 2.0f) + 0.499f);
     ID3D11PixelShader* pixelShader = resolvePS[AppSettings::MSAAMode];
     context->PSSetShader(pixelShader, nullptr, 0);
     context->VSSetShader(resolveVS, nullptr, 0);
@@ -302,8 +294,8 @@ void MSAAFilter::RenderAA()
     ID3D11ShaderResourceView* srvs[] = { colorTarget.SRView, velocityTarget.SRView, depthBuffer.SRView, prevFrameTarget.SRView};
     context->PSSetShaderResources(0, ArraySize_(srvs), srvs);
 
-    ID3D11SamplerState* samplers[1] = { samplerStates.LinearClamp() };
-    context->PSSetSamplers(0, 1, samplers);
+    ID3D11SamplerState* samplers[] = { samplerStates.LinearClamp(), samplerStates.Point() };
+    context->PSSetSamplers(0, ArraySize_(samplers), samplers);
 
     ID3D11Buffer* vbs[1] = { nullptr };
     UINT strides[1] = { 0 };

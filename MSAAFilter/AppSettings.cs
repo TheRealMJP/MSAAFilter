@@ -30,11 +30,19 @@ public class Settings
         Box = 0,
         Triangle,
         Gaussian,
+
+        [EnumLabel("Blackman-Harris")]
         BlackmanHarris,
         Smoothstep,
+
+        [EnumLabel("B-Spline")]
         BSpline,
+
+        [EnumLabel("Catmull-Rom")]
         CatmullRom,
         Mitchell,
+
+        [EnumLabel("Generalized Cubic")]
         GeneralizedCubic,
         Sinc,
     }
@@ -56,9 +64,17 @@ public class Settings
     enum JitterModes
     {
         None,
+
+        [EnumLabel("Uniform 2x")]
         Uniform2x,
+
+        [EnumLabel("Hammersley 4x")]
         Hammersley4x,
+
+        [EnumLabel("Hammersley 8x")]
         Hammersley8x,
+
+        [EnumLabel("Hammersley 16x")]
         Hammersley16x,
     }
 
@@ -77,8 +93,14 @@ public class Settings
     enum ClampModes
     {
         Disabled,
+
+        [EnumLabel("RGB Clamp")]
         RGB_Clamp,
+
+        [EnumLabel("RGB Clip")]
         RGB_Clip,
+
+        [EnumLabel("Variance Clip")]
         Variance_Clip,
     }
 
@@ -86,12 +108,12 @@ public class Settings
     {
         MSAAModes MSAAMode = MSAAModes.MSAA4x;
 
-        FilterTypes FilterType = FilterTypes.BSpline;
+        FilterTypes ResolveFilterType = FilterTypes.BSpline;
 
         [MinValue(0.0f)]
         [MaxValue(6.0f)]
         [StepSize(0.01f)]
-        float FilterSize = 2.0f;
+        float ResolveFilterDiameter = 2.0f;
 
         [MinValue(0.01f)]
         [MaxValue(1.0f)]
@@ -155,12 +177,16 @@ public class Settings
 
         [MinValue(0.0f)]
         [MaxValue(1.0f)]
-        float SharpeningAmount = 0.5f;
+        float SharpeningAmount = 0.0f;
 
         DilationModes DilationMode = DilationModes.DilateNearestDepth;
 
         [MaxValue(0.0f)]
         float MipBias = 0.0f;
+
+        FilterTypes ReprojectionFilter = FilterTypes.CatmullRom;
+
+        bool UseStandardReprojection = false;
     }
 
     public class SceneControls

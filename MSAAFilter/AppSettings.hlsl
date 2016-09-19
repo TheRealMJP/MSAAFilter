@@ -1,8 +1,8 @@
 cbuffer AppSettings : register(b7)
 {
     int MSAAMode;
-    int FilterType;
-    float FilterSize;
+    int ResolveFilterType;
+    float ResolveFilterDiameter;
     float GaussianSigma;
     float CubicB;
     float CubicC;
@@ -21,6 +21,8 @@ cbuffer AppSettings : register(b7)
     float SharpeningAmount;
     int DilationMode;
     float MipBias;
+    int ReprojectionFilter;
+    bool UseStandardReprojection;
     int CurrentScene;
     float3 LightDirection;
     float3 LightColor;

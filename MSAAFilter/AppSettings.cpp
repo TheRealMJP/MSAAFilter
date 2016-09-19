@@ -17,30 +17,30 @@ static const char* FilterTypesLabels[10] =
     "Box",
     "Triangle",
     "Gaussian",
-    "BlackmanHarris",
+    "Blackman-Harris",
     "Smoothstep",
-    "BSpline",
-    "CatmullRom",
+    "B-Spline",
+    "Catmull-Rom",
     "Mitchell",
-    "GeneralizedCubic",
+    "Generalized Cubic",
     "Sinc",
 };
 
 static const char* ClampModesLabels[4] =
 {
     "Disabled",
-    "RGB_Clamp",
-    "RGB_Clip",
-    "Variance_Clip",
+    "RGB Clamp",
+    "RGB Clip",
+    "Variance Clip",
 };
 
 static const char* JitterModesLabels[5] =
 {
     "None",
-    "Uniform2x",
-    "Hammersley4x",
-    "Hammersley8x",
-    "Hammersley16x",
+    "Uniform 2x",
+    "Hammersley 4x",
+    "Hammersley 8x",
+    "Hammersley 16x",
 };
 
 static const char* DilationModesLabels[3] =
@@ -62,8 +62,8 @@ static const char* ScenesLabels[5] =
 namespace AppSettings
 {
     MSAAModesSetting MSAAMode;
-    FilterTypesSetting FilterType;
-    FloatSetting FilterSize;
+    FilterTypesSetting ResolveFilterType;
+    FloatSetting ResolveFilterDiameter;
     FloatSetting GaussianSigma;
     FloatSetting CubicB;
     FloatSetting CubicC;
@@ -85,6 +85,8 @@ namespace AppSettings
     FloatSetting SharpeningAmount;
     DilationModesSetting DilationMode;
     FloatSetting MipBias;
+    FilterTypesSetting ReprojectionFilter;
+    BoolSetting UseStandardReprojection;
     ScenesSetting CurrentScene;
     DirectionSetting LightDirection;
     ColorSetting LightColor;
@@ -116,11 +118,11 @@ namespace AppSettings
         MSAAMode.Initialize(tweakBar, "MSAAMode", "Anti Aliasing", "MSAAMode", "", MSAAModes::MSAA4x, 4, MSAAModesLabels);
         Settings.AddSetting(&MSAAMode);
 
-        FilterType.Initialize(tweakBar, "FilterType", "Anti Aliasing", "Filter Type", "", FilterTypes::BSpline, 10, FilterTypesLabels);
-        Settings.AddSetting(&FilterType);
+        ResolveFilterType.Initialize(tweakBar, "ResolveFilterType", "Anti Aliasing", "Resolve Filter Type", "", FilterTypes::BSpline, 10, FilterTypesLabels);
+        Settings.AddSetting(&ResolveFilterType);
 
-        FilterSize.Initialize(tweakBar, "FilterSize", "Anti Aliasing", "Filter Size", "", 2.0000f, 0.0000f, 6.0000f, 0.0100f, ConversionMode::None, 1.0000f);
-        Settings.AddSetting(&FilterSize);
+        ResolveFilterDiameter.Initialize(tweakBar, "ResolveFilterDiameter", "Anti Aliasing", "Resolve Filter Diameter", "", 2.0000f, 0.0000f, 6.0000f, 0.0100f, ConversionMode::None, 1.0000f);
+        Settings.AddSetting(&ResolveFilterDiameter);
 
         GaussianSigma.Initialize(tweakBar, "GaussianSigma", "Anti Aliasing", "Gaussian Sigma", "", 0.5000f, 0.0100f, 1.0000f, 0.0100f, ConversionMode::None, 1.0000f);
         Settings.AddSetting(&GaussianSigma);
@@ -176,7 +178,7 @@ namespace AppSettings
         HiFreqWeight.Initialize(tweakBar, "HiFreqWeight", "Anti Aliasing", "Hi Freq Weight", "", 0.8500f, 0.0000f, 100.0000f, 0.0100f, ConversionMode::None, 1.0000f);
         Settings.AddSetting(&HiFreqWeight);
 
-        SharpeningAmount.Initialize(tweakBar, "SharpeningAmount", "Anti Aliasing", "Sharpening Amount", "", 0.5000f, 0.0000f, 1.0000f, 0.0100f, ConversionMode::None, 1.0000f);
+        SharpeningAmount.Initialize(tweakBar, "SharpeningAmount", "Anti Aliasing", "Sharpening Amount", "", 0.0000f, 0.0000f, 1.0000f, 0.0100f, ConversionMode::None, 1.0000f);
         Settings.AddSetting(&SharpeningAmount);
 
         DilationMode.Initialize(tweakBar, "DilationMode", "Anti Aliasing", "Dilation Mode", "", DilationModes::DilateNearestDepth, 3, DilationModesLabels);
@@ -184,6 +186,12 @@ namespace AppSettings
 
         MipBias.Initialize(tweakBar, "MipBias", "Anti Aliasing", "Mip Bias", "", 0.0000f, -340282300000000000000000000000000000000.0000f, 0.0000f, 0.0100f, ConversionMode::None, 1.0000f);
         Settings.AddSetting(&MipBias);
+
+        ReprojectionFilter.Initialize(tweakBar, "ReprojectionFilter", "Anti Aliasing", "Reprojection Filter", "", FilterTypes::CatmullRom, 10, FilterTypesLabels);
+        Settings.AddSetting(&ReprojectionFilter);
+
+        UseStandardReprojection.Initialize(tweakBar, "UseStandardReprojection", "Anti Aliasing", "Use Standard Reprojection", "", false);
+        Settings.AddSetting(&UseStandardReprojection);
 
         CurrentScene.Initialize(tweakBar, "CurrentScene", "Scene Controls", "Current Scene", "", Scenes::RoboHand, 5, ScenesLabels);
         Settings.AddSetting(&CurrentScene);
@@ -264,8 +272,8 @@ namespace AppSettings
     void UpdateCBuffer(ID3D11DeviceContext* context)
     {
         CBuffer.Data.MSAAMode = MSAAMode;
-        CBuffer.Data.FilterType = FilterType;
-        CBuffer.Data.FilterSize = FilterSize;
+        CBuffer.Data.ResolveFilterType = ResolveFilterType;
+        CBuffer.Data.ResolveFilterDiameter = ResolveFilterDiameter;
         CBuffer.Data.GaussianSigma = GaussianSigma;
         CBuffer.Data.CubicB = CubicB;
         CBuffer.Data.CubicC = CubicC;
@@ -284,6 +292,8 @@ namespace AppSettings
         CBuffer.Data.SharpeningAmount = SharpeningAmount;
         CBuffer.Data.DilationMode = DilationMode;
         CBuffer.Data.MipBias = MipBias;
+        CBuffer.Data.ReprojectionFilter = ReprojectionFilter;
+        CBuffer.Data.UseStandardReprojection = UseStandardReprojection;
         CBuffer.Data.CurrentScene = CurrentScene;
         CBuffer.Data.LightDirection = LightDirection;
         CBuffer.Data.LightColor = LightColor;
@@ -332,9 +342,9 @@ namespace AppSettings
         HiFreqWeight.SetEditable(enableTemporal);
         DilationMode.SetEditable(enableTemporal);
 
-        bool generalCubic = FilterType == FilterTypes::GeneralizedCubic;
+        bool generalCubic = ResolveFilterType == FilterTypes::GeneralizedCubic;
         CubicB.SetEditable(generalCubic);
         CubicC.SetEditable(generalCubic);
-        GaussianSigma.SetEditable(FilterType == FilterTypes::Gaussian);
+        GaussianSigma.SetEditable(ResolveFilterType == FilterTypes::Gaussian);
     }
 }
