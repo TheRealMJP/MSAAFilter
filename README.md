@@ -6,4 +6,4 @@ The .zip file in the releases section contains full source code, content, and pr
 
 # Build Instructions
 
-Just open the solution file in Visual Studio 2013, and build the project.
+Just open 'MSAAFilter.sln' in Visual Studio 2013, and build the project. A solution for Visual Studio 2015 is also available.
