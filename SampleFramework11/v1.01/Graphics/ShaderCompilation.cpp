@@ -272,13 +272,14 @@ struct ShaderFile
 vector<ShaderFile*> ShaderFiles;
 vector<CompiledShader*> CompiledShaders;
 
-template<typename T> ID3D11DeviceChild* CreateShader(ID3D11Device* device, ID3DBlob* byteCode)
+template<typename T> ID3D11DeviceChild* CreateShader(ID3D11Device* device, ID3DBlob* byteCode, const std::string & FunctionName)
 {
     if(typeid(T) == typeid(ID3D11VertexShader))
     {
         ID3D11VertexShader* shader = nullptr;
         DXCall(device->CreateVertexShader(byteCode->GetBufferPointer(), byteCode->GetBufferSize(),
                                           nullptr, &shader));
+        shader->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)FunctionName.length(), FunctionName.c_str());
         return shader;
     }
     else if(typeid(T) == typeid(ID3D11HullShader))
@@ -286,6 +287,7 @@ template<typename T> ID3D11DeviceChild* CreateShader(ID3D11Device* device, ID3DB
         ID3D11HullShader* shader = nullptr;
         DXCall(device->CreateHullShader(byteCode->GetBufferPointer(), byteCode->GetBufferSize(),
                                           nullptr, &shader));
+        shader->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)FunctionName.length(), FunctionName.c_str());
         return shader;
     }
     else if(typeid(T) == typeid(ID3D11DomainShader))
@@ -293,6 +295,7 @@ template<typename T> ID3D11DeviceChild* CreateShader(ID3D11Device* device, ID3DB
         ID3D11DomainShader* shader = nullptr;
         DXCall(device->CreateDomainShader(byteCode->GetBufferPointer(), byteCode->GetBufferSize(),
                                           nullptr, &shader));
+        shader->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)FunctionName.length(), FunctionName.c_str());
         return shader;
     }
     else if(typeid(T) == typeid(ID3D11GeometryShader))
@@ -300,6 +303,7 @@ template<typename T> ID3D11DeviceChild* CreateShader(ID3D11Device* device, ID3DB
         ID3D11GeometryShader* shader = nullptr;
         DXCall(device->CreateGeometryShader(byteCode->GetBufferPointer(), byteCode->GetBufferSize(),
                                           nullptr, &shader));
+        shader->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)FunctionName.length(), FunctionName.c_str());
         return shader;
     }
     else if(typeid(T) == typeid(ID3D11PixelShader))
@@ -307,6 +311,7 @@ template<typename T> ID3D11DeviceChild* CreateShader(ID3D11Device* device, ID3DB
         ID3D11PixelShader* shader = nullptr;
         DXCall(device->CreatePixelShader(byteCode->GetBufferPointer(), byteCode->GetBufferSize(),
                                           nullptr, &shader));
+        shader->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)FunctionName.length(), FunctionName.c_str());
         return shader;
     }
     else if(typeid(T) == typeid(ID3D11ComputeShader))
@@ -314,6 +319,7 @@ template<typename T> ID3D11DeviceChild* CreateShader(ID3D11Device* device, ID3DB
         ID3D11ComputeShader* shader = nullptr;
         DXCall(device->CreateComputeShader(byteCode->GetBufferPointer(), byteCode->GetBufferSize(),
                                           nullptr, &shader));
+        shader->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)FunctionName.length(), FunctionName.c_str());
         return shader;
     }
 
@@ -333,7 +339,7 @@ template<typename T> void CompileShader(ID3D11Device* device, CompiledShader* sh
                                      shader->Profile.c_str(), defines,
                                      shader->ForceOptimization, filePaths);
 
-    shader->ShaderPtr.Attach(CreateShader<T>(device, shader->ByteCode));
+    shader->ShaderPtr.Attach(CreateShader<T>(device, shader->ByteCode, shader->FunctionName));
 
     for(uint64 fileIdx = 0; fileIdx < filePaths.size(); ++ fileIdx)
     {

@@ -53,14 +53,21 @@ void PostProcessor::AfterReset(uint32 width, uint32 height)
     uint32 w = width;
     uint32 h = height;
 
+    int number = 0;
+    char buff[100];
+
     while(w > 1 || h > 1)
     {
         w = DispatchSize(ReductionTGSize, w);
         h = DispatchSize(ReductionTGSize, h);
 
         RenderTarget2D rt;
+        rt.Name = "PostProcessorReduction-";
+        sprintf_s(buff, 100, "%i", number);
+        rt.Name += buff;
         rt.Initialize(device, w, h, DXGI_FORMAT_R32_FLOAT, 1, 1, 0, false, true);
         reductionTargets.push_back(rt);
+        number++;
     }
 
     adaptedLuminance = reductionTargets[reductionTargets.size() - 1].SRView;

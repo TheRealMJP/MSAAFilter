@@ -150,14 +150,20 @@ void MSAAFilter::CreateRenderTargets()
 
     const uint32 NumSamples = AppSettings::NumMSAASamples();
     const uint32 Quality = NumSamples > 0 ? D3D11_STANDARD_MULTISAMPLE_PATTERN : 0;
+    colorTarget.Name = "colorTarget";
     colorTarget.Initialize(device, width, height, DXGI_FORMAT_R16G16B16A16_FLOAT, 1, NumSamples, Quality);
+    depthBuffer.Name = "depthBuffer";
     depthBuffer.Initialize(device, width, height, DXGI_FORMAT_D32_FLOAT, true, NumSamples, Quality);
+    velocityTarget.Name = "velocityBuffer";
     velocityTarget.Initialize(device, width, height, DXGI_FORMAT_R16G16_SNORM, true, NumSamples, Quality);
 
     if(resolveTarget.Width != width || resolveTarget.Height != height)
     {
+       resolveTarget.Name = "resolveTarget";
         resolveTarget.Initialize(device, width, height, colorTarget.Format);
-        prevFrameTarget.Initialize(device, width, height, colorTarget.Format);
+       prevFrameTarget.Name = "previousFrame";
+       prevFrameTarget.Initialize(device, width, height, colorTarget.Format);
+
     }
 }
 

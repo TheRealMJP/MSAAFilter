@@ -91,14 +91,16 @@ void MeshRenderer::LoadShaders()
 void MeshRenderer::CreateShadowMaps()
 {
     // Create the shadow map as a texture array
+    shadowMap.Name = "shadowMap";
     shadowMap.Initialize(device, ShadowMapSize, ShadowMapSize, DXGI_FORMAT_D24_UNORM_S8_UINT, true,
                          ShadowMSAASamples, 0, 1);
 
     DXGI_FORMAT smFmt = DXGI_FORMAT_R32G32B32A32_FLOAT;
     uint32 numMips = EnableShadowMips ? 0 : 1;
-    varianceShadowMap.Initialize(device, ShadowMapSize, ShadowMapSize, smFmt, numMips, 1, 0,
+    varianceShadowMap.Name = "VSM";
+   varianceShadowMap.Initialize(device, ShadowMapSize, ShadowMapSize, smFmt, numMips, 1, 0,
                                  EnableShadowMips, false, NumCascades, false);
-
+    tempVSM.Name = "tempVSM";
     tempVSM.Initialize(device, ShadowMapSize, ShadowMapSize, smFmt, 1, 1, 0, false, false, 1, false);
 }
 
@@ -169,15 +171,20 @@ void MeshRenderer::CreateReductionTargets(uint32 width, uint32 height)
 
     uint32 w = width;
     uint32 h = height;
-
-    while(w > 1 || h > 1)
+    int number = 0;
+    char buff[100];
+    while (w > 1 || h > 1)
     {
         w = DispatchSize(ReductionTGSize, w);
         h = DispatchSize(ReductionTGSize, h);
 
         RenderTarget2D rt;
+        rt.Name = "MeshRenderReduction-";
+        sprintf_s(buff, 100, "%i", number);
+        rt.Name += buff;
         rt.Initialize(device, w, h, DXGI_FORMAT_R16G16_UNORM, 1, 1, 0, false, true);
         depthReductionTargets.push_back(rt);
+        number++;
     }
 }
 
