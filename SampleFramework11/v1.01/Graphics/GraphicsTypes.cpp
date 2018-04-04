@@ -68,7 +68,10 @@ void RenderTarget2D::Initialize(ID3D11Device* device,
     }
 
     DXCall(device->CreateTexture2D(&desc, nullptr, &Texture));
-
+    if (Name.length())
+    {
+       Texture->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)Name.length(), Name.c_str());
+    }
     RTVArraySlices.clear();
     RTVArraySlices.reserve(arraySize);
     for(uint32 i = 0; i < arraySize; ++i)
@@ -233,6 +236,10 @@ void DepthStencilBuffer::Initialize(ID3D11Device* device,
     desc.Usage = D3D11_USAGE_DEFAULT;
     DXCall(device->CreateTexture2D(&desc, nullptr, &Texture));
 
+    if (Name.length())
+    {
+       Texture->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)Name.length(), Name.c_str());
+    }
     ArraySlices.clear();
     for(uint32 i = 0; i < arraySize; ++i)
     {

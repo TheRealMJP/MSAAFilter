@@ -23,6 +23,7 @@ struct RenderTarget2D
     ID3D11RenderTargetViewPtr RTView;
     ID3D11ShaderResourceViewPtr SRView;
     ID3D11UnorderedAccessViewPtr UAView;
+    std::string Name;
     uint32 Width;
     uint32 Height;
     uint32 NumMipLevels;
@@ -56,6 +57,7 @@ struct DepthStencilBuffer
     ID3D11DepthStencilViewPtr DSView;
     ID3D11DepthStencilViewPtr ReadOnlyDSView;
     ID3D11ShaderResourceViewPtr SRView;
+    std::string Name;
     uint32 Width;
     uint32 Height;
     uint32 MultiSamples;

@@ -266,6 +266,9 @@ void PostProcessorBase::PostProcess(ID3D11PixelShader* pixelShader, const wchar*
         constants->InputSize[i].y = static_cast<float>(std::max<uint32>(desc.Height / (1 << mipLevel), 1));
     }
 
+    _bstr_t b(name);
+    std::string buff = (const char *) b;
+    buff = std::string ("pp_out:") + buff;
     ID3D11Resource* resource;
     ID3D11Texture2DPtr texture;
     D3D11_TEXTURE2D_DESC desc;
@@ -275,6 +278,7 @@ void PostProcessorBase::PostProcess(ID3D11PixelShader* pixelShader, const wchar*
     uint32 mipLevel = rtDesc.Texture2D.MipSlice;
     texture.Attach(reinterpret_cast<ID3D11Texture2D*>(resource));
     texture->GetDesc(&desc);
+    texture->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)buff.length(), buff.c_str());
     constants->OutputSize.x = static_cast<float>(std::max<uint32>(desc.Width / (1 << mipLevel), 1));
     constants->OutputSize.y = static_cast<float>(std::max<uint32>(desc.Height / (1 << mipLevel), 1));
 

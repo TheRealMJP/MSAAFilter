@@ -32,17 +32,22 @@ ID3D11ShaderResourceViewPtr LoadTexture(ID3D11Device* device, const wchar* fileP
     ID3D11ShaderResourceViewPtr srv;
 
     const std::wstring extension = GetFileExtension(filePath);
+    _bstr_t b(filePath);
+    const char * buff = b;
     if(extension == L"DDS" || extension == L"dds")
     {
         DXCall(DirectX::CreateDDSTextureFromFileEx(device, filePath, 0, D3D11_USAGE_DEFAULT,
                                                    D3D11_BIND_SHADER_RESOURCE, 0, 0, forceSRGB,
                                                    &resource, &srv, nullptr));
+        resource->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)strlen(buff), buff);
+        
         return srv;
     }
     else
     {
         DXCall(DirectX:: CreateWICTextureFromFileEx(device, context, filePath, 0, D3D11_USAGE_DEFAULT,
                                                     D3D11_BIND_SHADER_RESOURCE, 0, 0, forceSRGB, &resource, &srv));
+        resource->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)strlen(buff), buff);
 
         return srv;
     }
@@ -104,6 +109,8 @@ static void GetTextureData(ID3D11Device* device, ID3D11ShaderResourceView* textu
 
     ID3D11Texture2DPtr decodeTexture;
     DXCall(device->CreateTexture2D(&decodeTextureDesc, nullptr, &decodeTexture));
+    std::string decode_texture("decode_texture");
+    decodeTexture->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)decode_texture.length(), decode_texture.c_str());
 
     ID3D11UnorderedAccessViewPtr decodeTextureUAV;
     DXCall(device->CreateUnorderedAccessView(decodeTexture, nullptr, &decodeTextureUAV));
