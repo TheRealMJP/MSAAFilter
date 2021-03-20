@@ -278,6 +278,7 @@ void PostProcessorBase::PostProcess(ID3D11PixelShader* pixelShader, const wchar*
     uint32 mipLevel = rtDesc.Texture2D.MipSlice;
     texture.Attach(reinterpret_cast<ID3D11Texture2D*>(resource));
     texture->GetDesc(&desc);
+    texture->SetPrivateData(WKPDID_D3DDebugObjectName, 0, NULL); //Prevents error SETPRIVATEDATA_CHANGINGPARAMS
     texture->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)buff.length(), buff.c_str());
     constants->OutputSize.x = static_cast<float>(std::max<uint32>(desc.Width / (1 << mipLevel), 1));
     constants->OutputSize.y = static_cast<float>(std::max<uint32>(desc.Height / (1 << mipLevel), 1));
